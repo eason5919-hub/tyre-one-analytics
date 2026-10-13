@@ -7,6 +7,8 @@ on:
       - index.html
       - .github/workflows/tyre-dashboard-pages.yml
   workflow_dispatch:
+  repository_dispatch:
+    types: [tyre_dashboard_refresh]
 
 permissions:
   contents: read
@@ -15,11 +17,12 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
