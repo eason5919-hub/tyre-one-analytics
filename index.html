@@ -826,6 +826,10 @@ var TyreDataEngine = (() => {
     if (period === "last_7") return {start:shift(today, -6), end:today};
     if (period === "last_30") return {start:shift(today, -29), end:today};
     if (period === "this_year") return {start:today.slice(0, 4) + "-01-01", end:today};
+    if (period === "next_month") {
+      const year = Number(today.slice(0, 4)), month = Number(today.slice(5, 7));
+      return {start:iso(year, month + 1, 1), end:iso(year, month + 2, 0)};
+    }
     if (period === "last_month") {
       const previous = shift(today.slice(0, 7) + "-01", -1);
       return {start:previous.slice(0, 7) + "-01", end:previous};
@@ -1094,6 +1098,7 @@ if (typeof module !== "undefined" && module.exports) module.exports = TyreDataEn
   const engine = TyreDataEngine.create(snapshot);
   const today = TyreDataEngine.malaysiaDay();
   const year = Number(today.slice(0,4)), currentMonth = Number(today.slice(5,7));
+  const nextMonthEnd = TyreDataEngine.range("next_month", today).end;
   const number = value => Number(value || 0).toLocaleString("en-MY", {maximumFractionDigits:1});
   const pcs = value => `${number(value)} PCS`;
   const html = value => String(value ?? "").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1159,7 +1164,7 @@ function restoreSizeReturn(origin) {
     const prefix=id.slice(0,-6);
     for(const suffix of ["Start","End"]) {
       $(prefix+suffix).min="1900-01-01";
-      $(prefix+suffix).max=today;
+      $(prefix+suffix).max=prefix==="brandSize" ? today : nextMonthEnd;
       $(prefix+suffix).value=suffix==="Start" ? today.slice(0,7)+"-01" : today;
     }
   }
@@ -1168,7 +1173,7 @@ function restoreSizeReturn(origin) {
   $("customerPeriod").insertAdjacentHTML("beforeend", '<option value="custom">Custom Dates</option>');
   for (const id of ["customerStart","customerEnd"]) {
     $(id).min="1900-01-01";
-    $(id).max=today;
+    $(id).max=nextMonthEnd;
   }
   $("customerStart").value=today.slice(0,7)+"-01";
   $("customerEnd").value=today;
@@ -1177,10 +1182,13 @@ function restoreSizeReturn(origin) {
   $("salespersonPeriod").insertAdjacentHTML("beforeend", '<option value="custom">Custom Dates</option>');
   for (const id of ["salespersonStart","salespersonEnd"]) {
     $(id).min="1900-01-01";
-    $(id).max=today;
+    $(id).max=nextMonthEnd;
   }
   $("salespersonStart").value=today.slice(0,7)+"-01";
   $("salespersonEnd").value=today;
+  for (const id of ["topSizePeriod","brandPeriod","customerPeriod","salespersonPeriod"]) {
+    $(id).insertAdjacentHTML("beforeend", '<option value="next_month">Next Month</option>');
+  }
   const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   $("dashboardMonth").innerHTML=months.map((name,i)=>`<option value="${i+1}">${name}</option>`).join("");
   $("dashboardMonth").value=currentMonth;
