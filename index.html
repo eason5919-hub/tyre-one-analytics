@@ -1316,11 +1316,39 @@ function restoreSizeReturn(origin) {
     view("search");
     window.scrollTo(0,0);
   }
+  function validateDateRange(prefix, custom) {
+    const start = $(prefix + "Start"), end = $(prefix + "End");
+    end.setCustomValidity("");
+    const invalid = custom && (!start.value || !end.value || start.value > end.value ||
+      !start.checkValidity() || !end.checkValidity());
+    end.setCustomValidity(invalid ? "Select a valid date range" : "");
+    for (const input of [start, end]) {
+      if (invalid) input.setAttribute("aria-invalid", "true");
+      else input.removeAttribute("aria-invalid");
+    }
+    let notice = $(prefix + "RangeError");
+    if (invalid && !notice) {
+      notice = document.createElement("p");
+      notice.id = prefix + "RangeError";
+      notice.className = "data-notice";
+      notice.setAttribute("role", "alert");
+      end.closest(".toolbar, .brand-breakdown-header").after(notice);
+    }
+    if (notice) {
+      notice.textContent = invalid ? "Select a valid date range" : "";
+      notice.classList.toggle("hidden", !invalid);
+    }
+    if (invalid) {
+      const error = new Error("Select a valid date range");
+      error.inlineRange = true;
+      throw error;
+    }
+    return true;
+  }
+
   function brandBreakdownOptions() {
     const custom = $("brandBreakdownCustom").value === "true";
-    $("brandBreakdownEnd").setCustomValidity(custom && $("brandBreakdownStart").value > $("brandBreakdownEnd").value
-      ? "End date must be on or after start date." : "");
-    if (custom && (!$("brandBreakdownStart").reportValidity() || !$("brandBreakdownEnd").reportValidity())) return null;
+    validateDateRange("brandBreakdown", custom);
     return custom ? {start:$("brandBreakdownStart").value,end:$("brandBreakdownEnd").value} : {};
   }
   function syncBrandBreakdownDates(data) {
@@ -1398,7 +1426,10 @@ function restoreSizeReturn(origin) {
       ctx.fillText(rows[i].period,pad+i*step,height-14);
     });ctx.lineWidth=1;
   }
-  const rankingOptions = prefix => ({start:$(prefix+"Start").value,end:$(prefix+"End").value});
+  const rankingOptions = prefix => {
+    validateDateRange(prefix, $(prefix+"Period").value === "custom");
+    return {start:$(prefix+"Start").value,end:$(prefix+"End").value};
+  };
   function syncRankingDates(prefix, data) {
     if($(prefix+"Period").value!=="custom") {
       $(prefix+"Start").value=data.start;
@@ -1432,7 +1463,10 @@ function restoreSizeReturn(origin) {
     view("customers");
     customers();
   }
-  const customerOptions = () => ({start:$("customerStart").value,end:$("customerEnd").value});
+  const customerOptions = () => {
+    validateDateRange("customer", $("customerPeriod").value === "custom");
+    return {start:$("customerStart").value,end:$("customerEnd").value};
+  };
   function customers() {
     const limit=$("customerLimit").value==="all" ? Infinity : Number($("customerLimit").value);
     const data=engine.customerPerformance($("customerSearch").value,$("customerPeriod").value,limit,chosenCustomer,today,customerOptions());
@@ -1466,7 +1500,10 @@ function restoreSizeReturn(origin) {
     view("salespeople");
     salespeople();
   }
-  const salespersonOptions = () => ({start:$("salespersonStart").value,end:$("salespersonEnd").value});
+  const salespersonOptions = () => {
+    validateDateRange("salesperson", $("salespersonPeriod").value === "custom");
+    return {start:$("salespersonStart").value,end:$("salespersonEnd").value};
+  };
   function salespeople() {
     const limit=$("salespersonLimit").value==="all" ? Infinity : Number($("salespersonLimit").value);
     const data=engine.salespersonPerformance($("salespersonSearch").value,$("salespersonPeriod").value,limit,chosenSalesperson,today,salespersonOptions());
@@ -1532,7 +1569,7 @@ function restoreSizeReturn(origin) {
   const loaders={dashboard,search:()=>{searches();sizeDetails();},topsizes:topSizes,brands,brandSize,customers,salespeople,stock:stocks,low,slow,export:()=>{},sources:freshness};
   function guarded(action) {
     try {$("sharedError").classList.add("hidden");action();}
-    catch(error) {$("sharedError").textContent=error.message;$("sharedError").classList.remove("hidden");}
+    catch(error) {if(error.inlineRange) return;$("sharedError").textContent=error.message;$("sharedError").classList.remove("hidden");}
   }
   function view(name) {
     if(!loaders[name] || (name==="search" && !chosenSize)) name="dashboard";
