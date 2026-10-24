@@ -747,7 +747,8 @@ canvas { display: block; }
 var TyreDataEngine = (() => {
   const sum = rows => rows.reduce((total, row) => total + row.qty, 0);
   function stockSizeKey(size) {
-    const match = size.match(/(?<![\d.])(?:LT)?(?:(\d+(?:\.\d+)?)X)?(\d+(?:\.\d+)?)(?:\/(\d+))?(?:Z?RF?|-)(\d+(?:\.\d+)?)(?:C|LT|PR)?/i);
+    const label = String(size).replace(/^\[[^\]]+\]\s*/, "").replace(/\u00d7/g, "X");
+    const match = label.match(/(?<![\d.])(?:LT)?(?:(\d+(?:\.\d+)?)X)?(\d+(?:\.\d+)?)(?:\/(\d+))?(?:Z?RF?|-)([1-9]\d?(?:\.\d)?)(?:C|LT|PR)?(?![\d.])/i);
     if (!match) return [Number.MAX_VALUE, 0, 0, 0];
     let width = Number(match[2]);
     // Inch and legacy 700/750 widths share the metric width ordering.
