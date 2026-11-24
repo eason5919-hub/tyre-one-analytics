@@ -36,9 +36,12 @@ jobs:
           mkdir -p _site
           cp index.html _site/index.html
       - name: Upload dashboard
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
+      # Pages can briefly miss a newly uploaded artifact.
+      - name: Wait for Pages artifact visibility
+        run: sleep 20
       - name: Deploy
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
